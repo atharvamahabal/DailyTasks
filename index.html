@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DayLog — Monthly Task Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0e0e0e;
+    --surface: #1a1a1a;
+    --card: #222222;
+    --border: #2e2e2e;
+    --accent: #c9f07a;
+    --accent2: #7af0c9;
+    --text: #f0ede6;
+    --muted: #888;
+    --danger: #f07a7a;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    padding: 0 0 60px;
+  }
+
+  header {
+    padding: 36px 40px 28px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: var(--accent);
+    letter-spacing: -0.5px;
+  }
+
+  header span {
+    color: var(--muted);
+    font-size: 0.85rem;
+    font-weight: 300;
+  }
+
+  .container {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 32px 24px;
+  }
+
+  /* Input Area */
+  .log-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 32px;
+    transition: border-color 0.2s;
+  }
+  .log-area:focus-within { border-color: var(--accent); }
+
+  .log-area label {
+    display: block;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .tag-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .tag-btn {
+    padding: 5px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .tag-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .tag-btn.active-work { background: rgba(201,240,122,0.12); border-color: var(--accent); color: var(--accent); }
+  .tag-btn.active-personal { background: rgba(122,240,201,0.12); border-color: var(--accent2); color: var(--accent2); }
+
+  textarea {
+    width: 100%;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 1rem;
+    line-height: 1.65;
+    resize: none;
+    min-height: 100px;
+    font-weight: 300;
+  }
+  textarea::placeholder { color: #444; }
+
+  .log-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+
+  .date-display {
+    font-size: 0.78rem;
+    color: var(--muted);
+  }
+
+  .add-btn {
+    background: var(--accent);
+    color: #0e0e0e;
+    border: none;
+    padding: 9px 22px;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .add-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .add-btn:active { transform: translateY(0); }
+
+  /* Entries */
+  .section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+
+  .section-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.15rem;
+    color: var(--text);
+  }
+
+  .entry-count {
+    font-size: 0.75rem;
+    color: var(--muted);
+    background: var(--card);
+    padding: 3px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  .entries-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 36px;
+  }
+
+  .entry {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    animation: slideIn 0.2s ease;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .entry-tag {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .tag-work { background: rgba(201,240,122,0.12); color: var(--accent); }
+  .tag-personal { background: rgba(122,240,201,0.12); color: var(--accent2); }
+
+  .entry-content { flex: 1; }
+  .entry-text {
+    font-size: 0.9rem;
+    line-height: 1.55;
+    color: var(--text);
+    font-weight: 300;
+  }
+  .entry-meta {
+    font-size: 0.72rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  .entry-del {
+    background: none;
+    border: none;
+    color: #444;
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 2px 4px;
+    transition: color 0.15s;
+    flex-shrink: 0;
+  }
+  .entry-del:hover { color: var(--danger); }
+
+  .empty-state {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--muted);
+    font-size: 0.88rem;
+  }
+
+  .month-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+  .month-tab {
+    padding: 5px 13px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--muted);
+    font-size: 0.78rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .month-tab.active { background: var(--card); color: var(--text); border-color: #444; }
+
+  /* Copy for Claude Section */
+  .claude-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .claude-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .claude-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.1rem;
+  }
+
+  .claude-body {
+    padding: 24px;
+  }
+
+  /* Steps */
+  .steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 24px;
+    position: relative;
+  }
+  .steps::before {
+    content: '';
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    right: 18px;
+    height: 1px;
+    background: var(--border);
+    z-index: 0;
+  }
+  .step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+  }
+  .step-num {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.78rem;
+    font-weight: 500;
+    color: var(--accent);
+  }
+  .step-label {
+    font-size: 0.72rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.4;
+  }
+
+  /* Prompt preview */
+  .prompt-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .prompt-box {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #bbb;
+    font-weight: 300;
+    white-space: pre-wrap;
+    max-height: 280px;
+    overflow-y: auto;
+    margin-bottom: 16px;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .prompt-box::-webkit-scrollbar { width: 4px; }
+  .prompt-box::-webkit-scrollbar-track { background: transparent; }
+  .prompt-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .prompt-highlight { color: var(--accent); font-weight: 500; }
+
+  .copy-claude-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #0e0e0e;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 500;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+  .copy-claude-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+  .copy-claude-btn:active { transform: translateY(0); }
+  .copy-claude-btn.copied { background: var(--accent2); }
+
+  .open-claude-btn {
+    width: 100%;
+    margin-top: 10px;
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+    padding: 10px 24px;
+    border-radius: 10px;
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .open-claude-btn:hover { background: rgba(122,240,201,0.08); }
+
+  .no-entries-msg {
+    color: var(--muted);
+    font-size: 0.85rem;
+    text-align: center;
+    padding: 20px 0;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>DayLog</h1>
+  <span>your daily notes → polished monthly reports</span>
+</header>
+
+<div class="container">
+
+  <!-- Log Input -->
+  <div class="log-area">
+    <label>What did you do today?</label>
+    <div class="tag-row">
+      <button class="tag-btn active-work" id="tagWork" onclick="setTag('work')">💼 Work</button>
+      <button class="tag-btn" id="tagPersonal" onclick="setTag('personal')">🏠 Personal</button>
+    </div>
+    <textarea id="taskInput" placeholder="e.g. had meeting with client about new project, fixed bug in login page, went gym in morning, called mom..." rows="4"></textarea>
+    <div class="log-footer">
+      <span class="date-display" id="todayDate"></span>
+      <button class="add-btn" onclick="addEntry()">+ Add Entry</button>
+    </div>
+  </div>
+
+  <!-- Month Tabs -->
+  <div class="section-header">
+    <span class="section-title">This Month's Entries</span>
+    <span class="entry-count" id="entryCount">0 entries</span>
+  </div>
+  <div class="month-tabs" id="monthTabs"></div>
+  <div class="entries-list" id="entriesList">
+    <div class="empty-state">No entries yet — start logging your day above!</div>
+  </div>
+
+  <!-- Copy for Claude Section -->
+  <div class="claude-section">
+    <div class="claude-header">
+      <h2>📋 Copy for Claude</h2>
+      <span style="font-size:0.75rem;color:var(--muted)">Free · No API needed</span>
+    </div>
+    <div class="claude-body">
+
+      <!-- Steps -->
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-label">Click<br>"Copy Prompt"</div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-label">Open<br>claude.ai</div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-label">Paste &<br>Send</div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-label">Get polished<br>report ✨</div>
+        </div>
+      </div>
+
+      <!-- Prompt Preview -->
+      <div class="prompt-label">Your prompt preview</div>
+      <div class="prompt-box" id="promptPreview">Add some entries this month to see your prompt here...</div>
+
+      <button class="copy-claude-btn" id="copyClaudeBtn" onclick="copyForClaude()">
+        📋 Copy Prompt for Claude
+      </button>
+      <a href="https://claude.ai" target="_blank" class="open-claude-btn">
+        ↗ Open Claude.ai
+      </a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ---- State ----
+let currentTag = 'work';
+let entries = JSON.parse(localStorage.getItem('daylog_entries') || '[]');
+let activeMonth = getCurrentMonthKey();
+
+function getCurrentMonthKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+}
+
+function getMonthLabel(key) {
+  const [y, m] = key.split('-');
+  return new Date(y, m-1, 1).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+}
+
+// ---- Init ----
+document.getElementById('todayDate').textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+function setTag(t) {
+  currentTag = t;
+  document.getElementById('tagWork').className = 'tag-btn' + (t === 'work' ? ' active-work' : '');
+  document.getElementById('tagPersonal').className = 'tag-btn' + (t === 'personal' ? ' active-personal' : '');
+}
+
+function addEntry() {
+  const text = document.getElementById('taskInput').value.trim();
+  if (!text) return;
+  const now = new Date();
+  const entry = {
+    id: Date.now(),
+    text,
+    tag: currentTag,
+    date: now.toISOString(),
+    monthKey: `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`
+  };
+  entries.unshift(entry);
+  localStorage.setItem('daylog_entries', JSON.stringify(entries));
+  document.getElementById('taskInput').value = '';
+  render();
+}
+
+function deleteEntry(id) {
+  entries = entries.filter(e => e.id !== id);
+  localStorage.setItem('daylog_entries', JSON.stringify(entries));
+  render();
+}
+
+function getMonths() {
+  const keys = [...new Set(entries.map(e => e.monthKey))].sort().reverse();
+  if (!keys.includes(getCurrentMonthKey())) keys.unshift(getCurrentMonthKey());
+  return keys;
+}
+
+function buildPrompt(monthKey) {
+  const filtered = entries.filter(e => e.monthKey === monthKey);
+  const workEntries = filtered.filter(e => e.tag === 'work');
+  const personalEntries = filtered.filter(e => e.tag === 'personal');
+  const monthLabel = getMonthLabel(monthKey);
+
+  const fmt = (arr) => arr.map(e => {
+    const d = new Date(e.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    return `  • [${d}] ${e.text}`;
+  }).join('\n');
+
+  return `Hi Claude! I've been logging my daily tasks for ${monthLabel} but I write them in rough, casual language — not proper English. Please rewrite them into a clean, professional monthly report.
+
+Here are my raw notes:
+
+💼 WORK / PROFESSIONAL:
+${workEntries.length > 0 ? fmt(workEntries) : '  (no work entries this month)'}
+
+🏠 PERSONAL:
+${personalEntries.length > 0 ? fmt(personalEntries) : '  (no personal entries this month)'}
+
+Please create a polished monthly summary with these sections:
+1. Month Overview (2-3 sentences)
+2. Professional Highlights (group similar work tasks, fix grammar, make it sound professional)
+3. Personal & Wellness (summarize personal activities)
+4. Key Achievements or Milestones (if anything stands out)
+5. One closing motivational sentence
+
+Important: Fix my grammar and English, group similar activities, keep it concise, and don't add any details I haven't mentioned. Thank you!`;
+}
+
+function render() {
+  const months = getMonths();
+
+  // Month tabs
+  const tabsEl = document.getElementById('monthTabs');
+  tabsEl.innerHTML = months.map(k =>
+    `<button class="month-tab ${k === activeMonth ? 'active' : ''}" onclick="switchMonth('${k}')">${getMonthLabel(k)}</button>`
+  ).join('');
+
+  // Entries for active month
+  const filtered = entries.filter(e => e.monthKey === activeMonth);
+  document.getElementById('entryCount').textContent = `${filtered.length} entr${filtered.length === 1 ? 'y' : 'ies'}`;
+
+  const listEl = document.getElementById('entriesList');
+  if (filtered.length === 0) {
+    listEl.innerHTML = '<div class="empty-state">No entries for this month yet.</div>';
+  } else {
+    listEl.innerHTML = filtered.map(e => {
+      const d = new Date(e.date);
+      const dateStr = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+      return `<div class="entry">
+        <span class="entry-tag tag-${e.tag}">${e.tag}</span>
+        <div class="entry-content">
+          <div class="entry-text">${escHtml(e.text)}</div>
+          <div class="entry-meta">${dateStr}</div>
+        </div>
+        <button class="entry-del" onclick="deleteEntry(${e.id})" title="Delete">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  // Update prompt preview
+  const preview = document.getElementById('promptPreview');
+  if (filtered.length === 0) {
+    preview.textContent = 'Add some entries this month to see your prompt here...';
+  } else {
+    preview.textContent = buildPrompt(activeMonth);
+  }
+}
+
+function switchMonth(key) {
+  activeMonth = key;
+  render();
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function copyForClaude() {
+  const filtered = entries.filter(e => e.monthKey === activeMonth);
+  if (filtered.length === 0) {
+    alert('No entries yet! Add some daily tasks first.');
+    return;
+  }
+
+  const prompt = buildPrompt(activeMonth);
+  navigator.clipboard.writeText(prompt).then(() => {
+    const btn = document.getElementById('copyClaudeBtn');
+    btn.textContent = '✅ Copied! Now open Claude.ai and paste';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = '📋 Copy Prompt for Claude';
+      btn.classList.remove('copied');
+    }, 3000);
+  });
+}
+
+// ---- Keyboard shortcut ----
+document.getElementById('taskInput').addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') addEntry();
+});
+
+render();
+</script>
+</body>
+</html>
